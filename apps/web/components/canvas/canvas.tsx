@@ -22,6 +22,7 @@ import { LabeledEdge } from "./labeled-edge";
 import { Toolbar } from "./toolbar";
 import { PresenceCursors } from "./presence-cursors";
 import { ConnectionStatus } from "./connection-status";
+import { AiPrompt } from "./ai-prompt";
 
 const nodeTypes: NodeTypes = { logic: LogicNode };
 const edgeTypes: EdgeTypes = { labeled: LabeledEdge };
@@ -105,6 +106,9 @@ export function Canvas() {
         </Panel>
         <Panel position="top-right">
           <ConnectionStatus />
+        </Panel>
+        <Panel position="bottom-center">
+          <AiPrompt />
         </Panel>
         {!synced && (
           <Panel position="top-center">

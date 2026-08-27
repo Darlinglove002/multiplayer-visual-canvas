@@ -26,6 +26,7 @@ type Store = {
 };
 
 type YDocContextValue = Store & {
+  boardId: string;
   synced: boolean;
   status: ConnectionStatus;
 };
@@ -154,6 +155,7 @@ export function YDocProvider({
 
   const value = useMemo<YDocContextValue>(
     () => ({
+      boardId,
       doc: entry.doc,
       undoManager: entry.undoManager,
       persistence: entry.persistence,
@@ -162,7 +164,7 @@ export function YDocProvider({
       synced,
       status,
     }),
-    [entry, synced, status],
+    [boardId, entry, synced, status],
   );
 
   return <YDocContext.Provider value={value}>{children}</YDocContext.Provider>;

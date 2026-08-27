@@ -76,6 +76,10 @@ Reset the local database: `npm run db:reset`.
 - `npm run smoke:snapshot` — drives a provider, then reads Postgres: the sync
   server's debounced store projects the Y.Doc into `board_documents.snapshot`
   (jsonb) faithfully and bumps `boards.last_activity_at`.
+- `npm run eval:ai` — needs `ANTHROPIC_API_KEY`. Runs the real generation call
+  against ~10 prompts and grades the *structure* of each graph (one start, ≥1
+  end, every edge resolves, within the node cap; injection prompts still yield a
+  normal flow). Model variance is reported, not failed.
 - `POST /api/boards` more than 5×/10min from one IP → `429` (Upstash limiter).
 
 Local Postgres is on host port **5433** and Redis on **6380**, shifted off the
@@ -98,9 +102,14 @@ defaults so the stack coexists with anything else on the machine.
 - [x] **Phase 4 — Dashboard + snapshot.** Board list (your recently-opened
       boards, tracked in `localStorage`) with a live mini-preview drawn from the
       JSON snapshot the sync server projects into Postgres, plus inline rename.
-- [ ] **Phase 5 — AI graph generation.** Snapshot → Claude (strict JSON) →
-      add-only patch → validate + elk layout → transactional apply. Eval suite.
-- [ ] **Phase 6 — Polish + write-up.** Visual pass, shortcuts, alignment,
+- [x] **Phase 5 — AI graph generation.** `POST /api/generate` reads the board
+      snapshot, calls Claude with a structured-output schema, and returns an
+      add-only `{ nodes, edges }`. The client regenerates ids, resolves edges
+      against the *live* doc (dropping dangling/self/duplicate), lays the
+      subgraph out with `elkjs`, offsets it into free space, and inserts it in
+      one Y.Doc transaction — one `Ctrl+Z` undoes the whole generation.
+      `npm run eval:ai` grades structure across a prompt set.
+- [ ] **Phase 6 — Polish + write-up.** Visual pass, shortcuts, alignment, CSP,
       README/diagram, walkthrough.
 
 ## Known limitations (deliberately out of scope for now)
@@ -117,3 +126,8 @@ defaults so the stack coexists with anything else on the machine.
   this, but the cleanup cron isn't written.
 - **Docker image for `apps/sync` installs all workspace deps.** Fine to build;
   a pruned install would slim it.
+- **AI layer needs `ANTHROPIC_API_KEY`** in `apps/web/.env.local` — without it,
+  `/api/generate` returns a clear `503`. Model is `claude-opus-5`
+  (`apps/web/lib/ai/generate.ts`); `claude-sonnet-5` is a fine cheaper swap for
+  this bounded task. No server-side refusal fallback: a refused "diagram this"
+  request just returns `422` and the user rephrases.

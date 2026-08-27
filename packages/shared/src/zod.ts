@@ -28,37 +28,42 @@ export const canvasSnapshotSchema = z.object({
   edges: z.array(snapshotEdgeSchema),
 });
 
+export const AI_MAX_NODES = 24;
+export const AI_MAX_EDGES = 48;
+
 /**
- * The only shape the AI layer is allowed to return: ADD-ONLY.
+ * The only shape the AI layer may return — and it is ADD-ONLY by construction:
  *
  * - No ids, no coordinates. The client regenerates ids (`ai_<nanoid>`) and elk
- *   assigns layout, so the model can never target or move an existing element.
- * - Edge endpoints reference either a new node's `tempId` or an existing live
- *   node id. Resolution + dangling-edge pruning happen at apply time inside a
- *   single Y.Doc transaction, checked against the live doc (not the snapshot
- *   the model saw, which may already be stale).
+ *   assigns layout, so the model can never target, move, or delete an existing
+ *   element — only propose new ones.
+ * - `label` is always a string ("" when none) — no optional fields, so it maps
+ *   cleanly to a strict structured-output schema.
+ * - An edge endpoint is either a new node's `tempId` or an existing live node
+ *   id. Resolution + dangling-edge pruning happen at apply time, inside one
+ *   Y.Doc transaction, against the *live* doc (not the possibly-stale snapshot
+ *   the model was shown).
  */
-export const aiPatchSchema = z.object({
-  addNodes: z
-    .array(
-      z.object({
-        tempId: z.string().min(1).max(64),
-        kind: nodeKindSchema,
-        content: z.string().min(1).max(2000),
-      }),
-    )
-    .max(40),
-  addEdges: z
-    .array(
-      z.object({
-        source: z.string().min(1).max(64),
-        target: z.string().min(1).max(64),
-        label: z.string().max(120).optional(),
-      }),
-    )
-    .max(80),
+// Array length isn't constrained in the schema — some structured-output
+// backends reject minItems/maxItems. The system prompt states the cap and the
+// client applier clamps to AI_MAX_NODES / AI_MAX_EDGES.
+export const aiGraphSchema = z.object({
+  nodes: z.array(
+    z.object({
+      tempId: z.string().min(1).max(64),
+      kind: nodeKindSchema,
+      content: z.string().min(1).max(200),
+    }),
+  ),
+  edges: z.array(
+    z.object({
+      source: z.string().min(1).max(64),
+      target: z.string().min(1).max(64),
+      label: z.string().max(80),
+    }),
+  ),
 });
 
-export type AiPatch = z.infer<typeof aiPatchSchema>;
-export type AiPatchNode = AiPatch["addNodes"][number];
-export type AiPatchEdge = AiPatch["addEdges"][number];
+export type AiGraph = z.infer<typeof aiGraphSchema>;
+export type AiGraphNode = AiGraph["nodes"][number];
+export type AiGraphEdge = AiGraph["edges"][number];

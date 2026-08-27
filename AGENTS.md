@@ -52,7 +52,16 @@ doc), honest documentation of gaps over half-built features.
   rename → `PATCH /api/boards/[id]`. Snapshot projection itself was already done
   in the Phase 0 sync-server `store` hook — Phase 4 is the consumer + a
   `smoke:snapshot` test. No view-only links (see above).
-- Next: Phase 5 (AI graph generation).
+- **Phase 5** — AI graph generation. `POST /api/generate` (`lib/ai/`): loads the
+  Postgres snapshot as context, `client.messages.parse` with
+  `zodOutputFormat(aiGraphSchema)` (structured output), one retry, maps failure
+  reasons to status codes. Client applier `lib/canvas/apply-ai-graph.ts` +
+  pure `resolveAiGraph` in `@canvas/shared`: clamp → regen ids → resolve edges
+  against the LIVE doc (drop dangling/self/dup) → `elkjs` layout
+  (`lib/canvas/layout.ts`, browser worker) → offset into free space → ONE
+  `doc.transact(…, LOCAL_ORIGIN)`. Model `claude-opus-5`. No server-side
+  refusal fallback (refusal → 422). `npm run eval:ai` needs the key.
+- Next: Phase 6 (visual pass, CSP — note `elk.bundled.js` needs `worker-src blob:`).
 
 ### Env / tooling notes
 - The Browser pane, when hidden, suspends `ResizeObserver` → React Flow can't
@@ -68,3 +77,4 @@ doc), honest documentation of gaps over half-built features.
 - `npm run db:migrate` / `npm run db:reset`
 - `npm run typecheck` / `npm run lint` / `npm run build` / `npm test`
 - `npm run smoke` — sync room gate · `npm run smoke:mp` — multiplayer + undo
+- `npm run smoke:snapshot` — snapshot projection · `npm run eval:ai` — AI structure (needs key)

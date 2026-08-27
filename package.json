@@ -27,7 +27,8 @@
     "format": "prettier --write .",
     "smoke": "node scripts/smoke-sync.mjs",
     "smoke:mp": "node scripts/smoke-multiplayer.mjs",
-    "smoke:snapshot": "node scripts/smoke-snapshot.mjs"
+    "smoke:snapshot": "node scripts/smoke-snapshot.mjs",
+    "eval:ai": "node scripts/eval-ai.mjs"
   },
   "devDependencies": {
     "@hocuspocus/provider": "^2.15.3",
