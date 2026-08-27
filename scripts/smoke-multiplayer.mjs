@@ -208,6 +208,12 @@ try {
   console.error(`\nsmoke aborted: ${err.message}`);
   failures = Math.max(failures, 1);
 } finally {
-  await unregister();
+  // Tear the tsx loader worker down first, then give its async handle a beat to
+  // finish closing — calling process.exit() into a half-closed worker trips a
+  // libuv assertion on Windows.
+  await Promise.race([unregister(), sleep(2000)]).catch(() => {});
+  await sleep(200);
 }
-process.exitCode = failures === 0 ? 0 : 1;
+// run() leaves Hocuspocus sockets/timers ref'd, so a bare `process.exitCode`
+// would hang after the last check. Exit hard.
+process.exit(failures === 0 ? 0 : 1);
