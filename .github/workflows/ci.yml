@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: canvas
+        ports:
+          - "5433:5432"
+        options: >-
+          --health-cmd "pg_isready -U postgres -d canvas"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+
+    env:
+      # Port 5433 mirrors docker-compose.yml, so DATABASE_URL is identical
+      # locally and in CI.
+      DATABASE_URL: postgres://postgres:postgres@localhost:5433/canvas
+      # Dummy values so `next build` can evaluate the env schema. No network calls
+      # are made during the build.
+      NEXT_PUBLIC_SYNC_URL: ws://localhost:1234
+      UPSTASH_REDIS_REST_URL: http://localhost:8079
+      UPSTASH_REDIS_REST_TOKEN: ci
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Same migration runner a developer uses locally (npm run setup calls it),
+      # so the documented setup and CI can't silently drift apart.
+      - run: npm run db:migrate
+
+      - run: npm run build
+      - run: npm run typecheck
+      - run: npm run lint

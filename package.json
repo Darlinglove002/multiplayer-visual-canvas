@@ -1,0 +1,37 @@
+{
+  "name": "multiplayer-visual-canvas",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "dev": "concurrently -k -n web,sync -c blue,magenta \"npm:dev:web\" \"npm:dev:sync\"",
+    "dev:web": "npm run dev -w @canvas/web",
+    "dev:sync": "npm run dev -w @canvas/sync",
+    "build": "npm run build -w @canvas/web",
+    "start:sync": "npm run start -w @canvas/sync",
+    "db:migrate": "node scripts/migrate.mjs",
+    "db:reset": "docker compose down -v && node scripts/setup.mjs",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint -w @canvas/web",
+    "format": "prettier --write .",
+    "smoke": "node scripts/smoke-sync.mjs"
+  },
+  "devDependencies": {
+    "@hocuspocus/provider": "^2.15.3",
+    "@types/node": "^22.10.2",
+    "concurrently": "^9.1.2",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

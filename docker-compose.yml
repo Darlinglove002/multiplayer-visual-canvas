@@ -1,0 +1,45 @@
+# Local infra only. Application code (apps/web, apps/sync) runs on the host via
+# `npm run dev` — same split as a typical Next.js + local-DB setup: infra in
+# Docker, app processes on the host so they hot-reload. The sync server has its
+# own Dockerfile (apps/sync/Dockerfile) for deployment to Railway/Fly.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: canvas
+    # Host ports are shifted off the defaults so this stack coexists with any
+    # other Postgres/Redis already on the dev machine (a native install,
+    # Laragon, another project's Supabase, etc.).
+    ports:
+      - "5433:5432"
+    volumes:
+      - canvas_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d canvas"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+
+  # Speaks the Upstash REST protocol on top of a plain Redis, so
+  # @upstash/ratelimit runs byte-for-byte the same in local dev and on Vercel
+  # (which talks to real Upstash). No extra cloud account needed for dev.
+  redis-http:
+    image: hiett/serverless-redis-http:latest
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: local_dev_token
+      SRH_CONNECTION_STRING: "redis://redis:6379"
+    ports:
+      - "8079:80"
+    depends_on:
+      - redis
+
+volumes:
+  canvas_pgdata:
