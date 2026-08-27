@@ -61,13 +61,17 @@ once the AI layer lands in Phase 5).
 
 Reset the local database: `npm run db:reset`.
 
-### Verifying Phase 0
+### Verifying
 
 - `curl localhost:3000/api/health` → `{ "ok": true, "checks": { "db": "ok", "redis": "ok" } }`
-- Open `http://localhost:3000`, click **Create a board** → redirects to
-  `/board/<uuid>` (a stub until Phase 1).
+- Open `http://localhost:3000`, click **Create a board** → the canvas. Add
+  blocks, connect them, double-click a block to edit its text. Open the same
+  `/board/<uuid>` in a second window to see live cursors and co-editing.
 - `npm run smoke` — creates a board, then checks the sync server **syncs** a
   valid board id and **rejects** an unknown one (`onAuthenticate` room gate).
+- `npm run smoke:mp` — two `HocuspocusProvider` clients on one board: checks
+  CRDT sync, concurrent create/text merges, awareness, and that a client's
+  undo reverts only its own work, never a collaborator's (Phase 3).
 - `POST /api/boards` more than 5×/10min from one IP → `429` (Upstash limiter).
 
 Local Postgres is on host port **5433** and Redis on **6380**, shifted off the
@@ -78,18 +82,21 @@ defaults so the stack coexists with anything else on the machine.
 - [x] **Phase 0 — Foundations.** Monorepo, Docker infra, `packages/shared`
       schema + Zod, migrations, one-command setup, CI, `onAuthenticate` room
       gate, Upstash rate limiting.
-- [ ] **Phase 1 — Single-user canvas.** React Flow, custom logic-block node,
-      CodeMirror-on-double-click for node content, edges with labels.
-- [ ] **Phase 2 — Yjs document.** `useYjsReactFlow` binding, nested `Y.Text`
-      per node, `Y.UndoManager` with `trackedOrigins`.
-- [ ] **Phase 3 — Multiplayer + presence.** Hocuspocus provider, awareness
-      cursors/selection, "X is editing" indicator, multiplayer undo test.
-- [ ] **Phase 4 — Persistence + rooms.** Board list, snapshot projection,
+- [x] **Phase 1 + 2 — Yjs-backed canvas.** React Flow bound to a Y.Doc
+      (`useYjsFlow`: doc is the source of truth, React state holds only
+      ephemeral UI), custom logic-block node, nested `Y.Text` per node edited
+      with CodeMirror mounted only on double-click, labeled edges, per-client
+      `Y.UndoManager` with `trackedOrigins`, IndexedDB persistence. 37 unit
+      tests over the doc primitives.
+- [x] **Phase 3 — Multiplayer + presence.** Hocuspocus provider, live cursors
+      with names, "X is editing" indicator, connection status; `Ctrl+Z` reverts
+      only your own work (`npm run smoke:mp`).
+- [ ] **Phase 4 — Rooms + snapshot.** Board list, JSON snapshot projection,
       view-only links.
 - [ ] **Phase 5 — AI graph generation.** Snapshot → Claude (strict JSON) →
       add-only patch → validate + elk layout → transactional apply. Eval suite.
-- [ ] **Phase 6 — Polish + write-up.** Shortcuts, alignment, README/diagram,
-      walkthrough.
+- [ ] **Phase 6 — Polish + write-up.** Visual pass, shortcuts, alignment,
+      README/diagram, walkthrough.
 
 ## Known limitations (deliberately out of scope for now)
 

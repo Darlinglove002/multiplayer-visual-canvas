@@ -15,10 +15,13 @@ import {
 import "@xyflow/react/dist/style.css";
 import { useYDoc } from "@/lib/canvas/ydoc";
 import { useYjsFlow } from "@/lib/canvas/use-yjs-flow";
+import { usePresenceActions } from "@/lib/canvas/presence";
 import { addNode } from "@/lib/canvas/actions";
 import { LogicNode } from "./logic-node";
 import { LabeledEdge } from "./labeled-edge";
 import { Toolbar } from "./toolbar";
+import { PresenceCursors } from "./presence-cursors";
+import { ConnectionStatus } from "./connection-status";
 
 const nodeTypes: NodeTypes = { logic: LogicNode };
 const edgeTypes: EdgeTypes = { labeled: LabeledEdge };
@@ -26,6 +29,7 @@ const edgeTypes: EdgeTypes = { labeled: LabeledEdge };
 export function Canvas() {
   const { doc, undoManager, synced } = useYDoc();
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect } = useYjsFlow();
+  const { setCursor } = usePresenceActions();
   const { screenToFlowPosition } = useReactFlow();
 
   const onDoubleClick = useCallback(
@@ -39,6 +43,14 @@ export function Canvas() {
     },
     [doc, undoManager, screenToFlowPosition],
   );
+
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      setCursor(screenToFlowPosition({ x: e.clientX, y: e.clientY }));
+    },
+    [setCursor, screenToFlowPosition],
+  );
+  const onPointerLeave = useCallback(() => setCursor(null), [setCursor]);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -67,6 +79,8 @@ export function Canvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onPointerMove={onPointerMove}
+        onPointerLeave={onPointerLeave}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onDoubleClick={onDoubleClick}
@@ -85,8 +99,12 @@ export function Canvas() {
           nodeColor={(n) => (n.data as { color?: string }).color ?? "#94a3b8"}
           className="!bg-white/80 dark:!bg-slate-900/80"
         />
+        <PresenceCursors />
         <Panel position="top-left">
           <Toolbar />
+        </Panel>
+        <Panel position="top-right">
+          <ConnectionStatus />
         </Panel>
         {!synced && (
           <Panel position="top-center">
