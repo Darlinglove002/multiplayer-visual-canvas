@@ -21,7 +21,9 @@ doc), honest documentation of gaps over half-built features.
   `ydoc.transact(fn, LOCAL_ORIGIN)`.
 - **Auth**: none yet. One board = one uuid `room_id` in the URL. Anonymous
   identity (name + random color) for presence, persisted to `localStorage`.
-  `onAuthenticate` only checks the board exists.
+  `onAuthenticate` only checks the board exists. **No view-only links** — the
+  transport stays a bare `room_id`, so everyone with the link is an editor.
+  Read-only mode is cancelled, not deferred; do not add token-gated links.
 - **AI layer**: server reads the JSON snapshot, calls Claude with a strict
   schema, returns an **add-only** patch (`aiPatchSchema` in `packages/shared`) —
   no ids, no coordinates. Client regenerates ids, elk lays out, dangling edges
@@ -44,7 +46,13 @@ doc), honest documentation of gaps over half-built features.
   `PresenceCursors` renders in `<ViewportPortal>`. Multiplayer-undo verified:
   Ctrl+Z reverts only the local client's work. Canvas is `ssr: false` (Yjs /
   IndexedDB / WS can't run on the server).
-- Next: Phase 4 (board list, snapshot projection, view-only links), Phase 5 (AI).
+- **Phase 4** — dashboard (`app/page.tsx`, client) lists this browser's recent
+  boards (`lib/recent-boards.ts`, localStorage) via `GET /api/boards?ids=`,
+  each with a `<BoardPreview>` SVG drawn from the Postgres snapshot; inline
+  rename → `PATCH /api/boards/[id]`. Snapshot projection itself was already done
+  in the Phase 0 sync-server `store` hook — Phase 4 is the consumer + a
+  `smoke:snapshot` test. No view-only links (see above).
+- Next: Phase 5 (AI graph generation).
 
 ### Env / tooling notes
 - The Browser pane, when hidden, suspends `ResizeObserver` → React Flow can't

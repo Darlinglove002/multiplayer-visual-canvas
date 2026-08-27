@@ -64,14 +64,18 @@ Reset the local database: `npm run db:reset`.
 ### Verifying
 
 - `curl localhost:3000/api/health` → `{ "ok": true, "checks": { "db": "ok", "redis": "ok" } }`
-- Open `http://localhost:3000`, click **Create a board** → the canvas. Add
-  blocks, connect them, double-click a block to edit its text. Open the same
-  `/board/<uuid>` in a second window to see live cursors and co-editing.
-- `npm run smoke` — creates a board, then checks the sync server **syncs** a
-  valid board id and **rejects** an unknown one (`onAuthenticate` room gate).
-- `npm run smoke:mp` — two `HocuspocusProvider` clients on one board: checks
-  CRDT sync, concurrent create/text merges, awareness, and that a client's
-  undo reverts only its own work, never a collaborator's (Phase 3).
+- Open `http://localhost:3000` — the dashboard of your recent boards. **New
+  board** → the canvas. Add blocks, connect them, double-click a block to edit
+  its text. Open the same `/board/<uuid>` in a second window to see live cursors
+  and co-editing. Back on the dashboard, each board shows a live mini-preview.
+- `npm run smoke` — sync server **syncs** a valid board id, **rejects** an
+  unknown one (`onAuthenticate` room gate).
+- `npm run smoke:mp` — two `HocuspocusProvider` clients on one board: CRDT sync,
+  concurrent create/text merges, awareness, and that a client's undo reverts
+  only its own work, never a collaborator's.
+- `npm run smoke:snapshot` — drives a provider, then reads Postgres: the sync
+  server's debounced store projects the Y.Doc into `board_documents.snapshot`
+  (jsonb) faithfully and bumps `boards.last_activity_at`.
 - `POST /api/boards` more than 5×/10min from one IP → `429` (Upstash limiter).
 
 Local Postgres is on host port **5433** and Redis on **6380**, shifted off the
@@ -91,8 +95,9 @@ defaults so the stack coexists with anything else on the machine.
 - [x] **Phase 3 — Multiplayer + presence.** Hocuspocus provider, live cursors
       with names, "X is editing" indicator, connection status; `Ctrl+Z` reverts
       only your own work (`npm run smoke:mp`).
-- [ ] **Phase 4 — Rooms + snapshot.** Board list, JSON snapshot projection,
-      view-only links.
+- [x] **Phase 4 — Dashboard + snapshot.** Board list (your recently-opened
+      boards, tracked in `localStorage`) with a live mini-preview drawn from the
+      JSON snapshot the sync server projects into Postgres, plus inline rename.
 - [ ] **Phase 5 — AI graph generation.** Snapshot → Claude (strict JSON) →
       add-only patch → validate + elk layout → transactional apply. Eval suite.
 - [ ] **Phase 6 — Polish + write-up.** Visual pass, shortcuts, alignment,
@@ -100,9 +105,12 @@ defaults so the stack coexists with anything else on the machine.
 
 ## Known limitations (deliberately out of scope for now)
 
-- **No real auth.** One board = one unguessable `room_id` in the URL; anyone
-  with the link can edit. A production version needs sessions + per-board roles
-  enforced in Postgres RLS, not just app code.
+- **No real auth, and no view-only links.** One board = one unguessable
+  `room_id` in the URL. The URL *is* the capability: anyone who has it is a full
+  editor. There is deliberately no read-only mode — it would mean gating the
+  WebSocket transport with per-link tokens, and keeping the transport a plain
+  `room_id` is a design decision (see [AGENTS.md](AGENTS.md)). A production
+  version would add sessions + per-board roles enforced in Postgres RLS.
 - **Single sync instance.** Scaling `apps/sync` past one process needs the
   Hocuspocus Redis extension for pub/sub between instances.
 - **No board TTL job yet.** `boards.last_activity_at` is maintained for exactly
