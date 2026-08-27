@@ -15,7 +15,8 @@ const nextConfig: NextConfig = {
   // We maintain one hand-written AGENTS.md at the repo root; don't let `next dev`
   // scatter generated AGENTS.md / CLAUDE.md files into apps/web.
   agentRules: false,
-  transpilePackages: ["@canvas/shared"],
+  // @canvas/shared ships TS source; y-codemirror.next ships untranspiled ESM.
+  transpilePackages: ["@canvas/shared", "y-codemirror.next"],
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

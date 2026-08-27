@@ -22,6 +22,7 @@
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test -w @canvas/shared",
     "lint": "npm run lint -w @canvas/web",
     "format": "prettier --write .",
     "smoke": "node scripts/smoke-sync.mjs"
