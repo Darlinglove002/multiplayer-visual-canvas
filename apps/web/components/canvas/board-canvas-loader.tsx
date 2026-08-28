@@ -12,7 +12,7 @@ const BoardCanvas = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="grid h-dvh w-screen place-items-center bg-[#fafafa] dark:bg-[#0a0a0a]">
+      <div className="grid h-dvh w-screen place-items-center bg-[var(--canvas-bg)]">
         <span className="text-sm text-slate-400">Loading canvas…</span>
       </div>
     ),

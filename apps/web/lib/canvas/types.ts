@@ -20,8 +20,8 @@ export type LabeledEdgeData = {
 export type LabeledEdge = Edge<LabeledEdgeData, "labeled">;
 
 export const KIND_META: Record<NodeKind, { label: string; hint: string }> = {
-  start: { label: "Start", hint: "entry point" },
-  action: { label: "Action", hint: "a step" },
-  decision: { label: "Decision", hint: "a branch" },
-  end: { label: "End", hint: "terminal" },
+  start: { label: "Start", hint: "Add a start block — where the flow begins" },
+  action: { label: "Action", hint: "Add an action block — a step in the flow" },
+  decision: { label: "Decision", hint: "Add a decision block — a yes/no branch" },
+  end: { label: "End", hint: "Add an end block — a terminal state" },
 };

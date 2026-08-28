@@ -70,7 +70,7 @@ export function Canvas() {
 
   return (
     <div
-      className="relative h-dvh w-screen bg-[#fafafa] outline-none dark:bg-[#0a0a0a]"
+      className="relative h-dvh w-screen bg-[var(--canvas-bg)] outline-none"
       onKeyDown={onKeyDown}
       tabIndex={0}
     >
@@ -92,13 +92,14 @@ export function Canvas() {
         fitView
         fitViewOptions={{ padding: 0.3, maxZoom: 1 }}
       >
-        <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="#d4d4d8" />
-        <Controls showInteractive={false} />
+        <Background variant={BackgroundVariant.Dots} gap={18} size={1} color="var(--canvas-dots)" />
+        <Controls showInteractive={false} className="!shadow-sm" />
         <MiniMap
           pannable
           zoomable
           nodeColor={(n) => (n.data as { color?: string }).color ?? "#94a3b8"}
-          className="!bg-white/80 dark:!bg-slate-900/80"
+          maskColor="transparent"
+          className="!rounded-lg !border !border-slate-200 !bg-white/70 !shadow-sm dark:!border-slate-800 dark:!bg-slate-900/70"
         />
         <PresenceCursors />
         <Panel position="top-left">
@@ -112,12 +113,19 @@ export function Canvas() {
         </Panel>
         {!synced && (
           <Panel position="top-center">
-            <span className="rounded-md bg-white/80 px-2 py-1 text-xs text-slate-500 shadow-sm dark:bg-slate-900/80">
-              loading…
+            <span className="rounded-md border border-slate-200 bg-white/90 px-2.5 py-1 text-xs text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-900/90 dark:text-slate-400">
+              Loading board…
             </span>
           </Panel>
         )}
       </ReactFlow>
+
+      {synced && nodes.length === 0 && (
+        <p className="pointer-events-none absolute left-1/2 top-[42%] w-64 -translate-x-1/2 text-center text-sm leading-relaxed text-slate-400">
+          Double-click anywhere to add a block, drag from a handle to connect two, or ask the
+          AI below to sketch a whole flow.
+        </p>
+      )}
     </div>
   );
 }

@@ -1,10 +1,44 @@
 @import "tailwindcss";
 
+/* The 4 node kinds are a colour language used identically everywhere: the
+   block's accent bar, the toolbar, the minimap, the dashboard preview. Same
+   colour always means the same kind. */
+@theme inline {
+  --color-kind-start: #10b981;
+  --color-kind-action: #6366f1;
+  --color-kind-decision: #f59e0b;
+  --color-kind-end: #ef4444;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Canvas surfaces that get passed to React Flow as props (not classes), so they
+   can't use `dark:` utilities — driven by these vars instead. */
 :root {
-  color-scheme: light dark;
+  --canvas-bg: #fafafa;
+  --canvas-dots: #e4e4e7;
+  --edge: #cbd5e1;
+  --edge-active: #64748b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas-bg: #0b0b0e;
+    --canvas-dots: #26262c;
+    --edge: #3f3f46;
+    --edge-active: #71717a;
+  }
 }
 
 html,
 body {
   height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

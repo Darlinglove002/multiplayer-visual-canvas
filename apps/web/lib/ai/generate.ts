@@ -3,10 +3,9 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { aiGraphSchema, type AiGraph, type CanvasSnapshot } from "@canvas/shared";
 import { GENERATE_SYSTEM_PROMPT, buildUserContent } from "./prompt";
 
-// Per current Anthropic API guidance. The ai-refund-ops-agent used
-// `claude-sonnet-5`; this is a bounded JSON-generation task where sonnet-5 would
-// also be fine and cheaper — switch here if desired.
-const MODEL = "claude-opus-5";
+// Sonnet handles this bounded structured-generation task well, faster and
+// ~5x cheaper than Opus. Same model the ai-refund-ops-agent used.
+const MODEL = "claude-sonnet-5";
 const MAX_ATTEMPTS = 2;
 
 export type GenerateOutcome =

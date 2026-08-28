@@ -44,7 +44,7 @@ export function LabeledEdge({
         markerEnd={markerEnd}
         style={{
           strokeWidth: selected ? 2 : 1.5,
-          stroke: selected ? "#64748b" : "#cbd5e1",
+          stroke: selected ? "var(--edge-active)" : "var(--edge)",
         }}
       />
       {(label || editing) && (

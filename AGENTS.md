@@ -60,8 +60,18 @@ doc), honest documentation of gaps over half-built features.
   against the LIVE doc (drop dangling/self/dup) → `elkjs` layout
   (`lib/canvas/layout.ts`, browser worker) → offset into free space → ONE
   `doc.transact(…, LOCAL_ORIGIN)`. Model `claude-opus-5`. No server-side
-  refusal fallback (refusal → 422). `npm run eval:ai` needs the key.
-- Next: Phase 6 (visual pass, CSP — note `elk.bundled.js` needs `worker-src blob:`).
+  refusal fallback (refusal → 422). `npm run eval:ai` needs the key. Model
+  `claude-sonnet-5` (was opus-5; sonnet is fine + cheaper for this).
+- **Phase 6** — visual pass. Design tokens in `globals.css` (`@theme` +
+  `:root` vars for canvas surfaces that get passed to RF as props, with a dark
+  media-query block). `next/font` Inter. The 4 kind colours are one language
+  used on the node, toolbar, minimap, and dashboard preview. Prod-only CSP in
+  `next.config.ts` — `worker-src blob:` for elkjs, `connect-src` includes the
+  sync WS origin derived from `NEXT_PUBLIC_SYNC_URL`. `prefers-reduced-motion`
+  honoured globally. README rewritten around the architecture.
+
+All six phases done. The one open item is `ANTHROPIC_API_KEY` — set it in
+`apps/web/.env.local` to exercise live generation + `npm run eval:ai`.
 
 ### Env / tooling notes
 - The Browser pane, when hidden, suspends `ResizeObserver` → React Flow can't
