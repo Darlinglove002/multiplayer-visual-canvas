@@ -16,12 +16,24 @@ const bodySchema = z.object({
   prompt: z.string().trim().min(3).max(1000),
 });
 
-const STATUS: Record<string, number> = {
-  auth: 503,
-  rate_limited: 429,
-  refusal: 422,
-  invalid_output: 422,
-  api_error: 502,
+const FAILURE: Record<string, { status: number; message: string }> = {
+  auth: {
+    status: 503,
+    message: "The AI assistant isn't set up — add ANTHROPIC_API_KEY to apps/web/.env.local.",
+  },
+  rate_limited: {
+    status: 429,
+    message: "You've hit the generation limit. Try again in a little while.",
+  },
+  refusal: {
+    status: 422,
+    message: "Couldn't turn that into a flowchart. Try describing a process, like “refund request handling”.",
+  },
+  invalid_output: {
+    status: 422,
+    message: "Couldn't turn that into a flowchart. Try describing a process, like “user signup with email verification”.",
+  },
+  api_error: { status: 502, message: "The AI service had a hiccup. Try again." },
 };
 
 export async function POST(request: Request) {
@@ -55,13 +67,10 @@ export async function POST(request: Request) {
 
   const result = await generateGraph(prompt, snapshot);
   if (!result.ok) {
-    const message =
-      result.reason === "auth"
-        ? "The AI layer isn't configured — set ANTHROPIC_API_KEY in apps/web/.env.local."
-        : `Couldn't generate a graph (${result.reason}).`;
+    const failure = FAILURE[result.reason] ?? { status: 500, message: "Generation failed." };
     return NextResponse.json(
-      { error: message, reason: result.reason },
-      { status: STATUS[result.reason] ?? 500 },
+      { error: failure.message, reason: result.reason },
+      { status: failure.status },
     );
   }
 

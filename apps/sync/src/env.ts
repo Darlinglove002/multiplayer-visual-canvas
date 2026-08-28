@@ -1,6 +1,12 @@
 import "dotenv/config";
 import { z } from "zod";
 
+// Most hosts (Fly, Railway, Render) inject the port as `PORT`; honour that,
+// then our own `HOCUSPOCUS_PORT`, then the local default.
+if (!process.env.HOCUSPOCUS_PORT && process.env.PORT) {
+  process.env.HOCUSPOCUS_PORT = process.env.PORT;
+}
+
 const schema = z.object({
   DATABASE_URL: z.string().min(1),
   HOCUSPOCUS_PORT: z.coerce.number().int().positive().default(1234),

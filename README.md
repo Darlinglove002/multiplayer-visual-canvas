@@ -116,6 +116,17 @@ Local Postgres is on host port **5433** and Redis on **6380**, shifted off the
 defaults so the stack coexists with anything else on the machine. Reset the
 local database with `npm run db:reset`.
 
+### Using a board
+
+Double-click empty canvas to add a block · drag from a handle to connect two ·
+double-click a block to edit its text · **right-click a block** to change its
+kind or colour, or delete it · **Share** copies the board link · `Ctrl+Z` /
+`Ctrl+Shift+Z` for undo/redo · the bar at the bottom asks the AI for a whole flow.
+
+## Deploying
+
+Neon + Upstash + Fly + Vercel, all with a free tier — see **[DEPLOY.md](DEPLOY.md)**.
+
 ### Verifying
 
 | Command | Checks |

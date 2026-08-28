@@ -1,0 +1,27 @@
+# Fly.io config for the Hocuspocus sync server.
+#
+#   fly launch --no-deploy        (from the repo root — see DEPLOY.md)
+#   fly secrets set DATABASE_URL='postgres://…neon…?sslmode=require'
+#   fly deploy --config apps/sync/fly.toml --dockerfile apps/sync/Dockerfile
+#
+# The build context is the repo root (npm workspaces), so run fly from there.
+
+app = "canvas-sync"
+primary_region = "iad"
+
+[build]
+  dockerfile = "apps/sync/Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"   # it holds the live Y.Doc in memory — don't idle it out
+  auto_start_machines = true
+  min_machines_running = 1     # a single instance (see README "Known limitations")
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

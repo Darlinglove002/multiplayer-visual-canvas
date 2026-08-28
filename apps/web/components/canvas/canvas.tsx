@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -22,6 +22,8 @@ import { LabeledEdge } from "./labeled-edge";
 import { Toolbar } from "./toolbar";
 import { PresenceCursors } from "./presence-cursors";
 import { ConnectionStatus } from "./connection-status";
+import { ShareButton } from "./share-button";
+import { NodeMenu } from "./node-menu";
 import { AiPrompt } from "./ai-prompt";
 
 const nodeTypes: NodeTypes = { logic: LogicNode };
@@ -32,6 +34,7 @@ export function Canvas() {
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect } = useYjsFlow();
   const { setCursor } = usePresenceActions();
   const { screenToFlowPosition } = useReactFlow();
+  const [menu, setMenu] = useState<{ nodeId: string; x: number; y: number } | null>(null);
 
   const onDoubleClick = useCallback(
     (e: React.MouseEvent) => {
@@ -52,6 +55,12 @@ export function Canvas() {
     [setCursor, screenToFlowPosition],
   );
   const onPointerLeave = useCallback(() => setCursor(null), [setCursor]);
+
+  const onNodeContextMenu = useCallback((e: React.MouseEvent, node: { id: string }) => {
+    e.preventDefault();
+    setMenu({ nodeId: node.id, x: e.clientX, y: e.clientY });
+  }, []);
+  const closeMenu = useCallback(() => setMenu(null), []);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -82,6 +91,9 @@ export function Canvas() {
         onConnect={onConnect}
         onPointerMove={onPointerMove}
         onPointerLeave={onPointerLeave}
+        onNodeContextMenu={onNodeContextMenu}
+        onPaneClick={closeMenu}
+        onMoveStart={closeMenu}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onDoubleClick={onDoubleClick}
@@ -105,7 +117,8 @@ export function Canvas() {
         <Panel position="top-left">
           <Toolbar />
         </Panel>
-        <Panel position="top-right">
+        <Panel position="top-right" className="flex items-center gap-1.5">
+          <ShareButton />
           <ConnectionStatus />
         </Panel>
         <Panel position="bottom-center">
@@ -125,6 +138,10 @@ export function Canvas() {
           Double-click anywhere to add a block, drag from a handle to connect two, or ask the
           AI below to sketch a whole flow.
         </p>
+      )}
+
+      {menu && (
+        <NodeMenu nodeId={menu.nodeId} x={menu.x} y={menu.y} onClose={closeMenu} />
       )}
     </div>
   );

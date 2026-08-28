@@ -7,6 +7,7 @@ import {
   type NodeKind,
   createEdge,
   createNode,
+  deleteNode,
   updateEdgeLabel,
   updateNodeField,
 } from "@canvas/shared";
@@ -38,6 +39,10 @@ export function setNodeColor(doc: Y.Doc, id: string, color: string): void {
 
 export function setNodeKind(doc: Y.Doc, id: string, kind: NodeKind): void {
   updateNodeField(doc, id, "kind", kind, LOCAL_ORIGIN);
+}
+
+export function removeNode(doc: Y.Doc, id: string): void {
+  deleteNode(doc, id, LOCAL_ORIGIN);
 }
 
 export function connectNodes(doc: Y.Doc, source: string, target: string): void {

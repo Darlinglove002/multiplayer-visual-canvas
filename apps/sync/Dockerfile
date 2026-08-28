@@ -20,5 +20,6 @@ COPY packages/shared ./packages/shared
 COPY apps/sync ./apps/sync
 
 ENV NODE_ENV=production
-EXPOSE 1234
+# The host injects the real port as $PORT (Fly → 8080); src/env.ts honours it.
+EXPOSE 8080
 CMD ["npm", "run", "start", "-w", "@canvas/sync"]

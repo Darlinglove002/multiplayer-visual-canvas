@@ -70,8 +70,13 @@ doc), honest documentation of gaps over half-built features.
   sync WS origin derived from `NEXT_PUBLIC_SYNC_URL`. `prefers-reduced-motion`
   honoured globally. README rewritten around the architecture.
 
-All six phases done. The one open item is `ANTHROPIC_API_KEY` — set it in
-`apps/web/.env.local` to exercise live generation + `npm run eval:ai`.
+Post-Phase-6 polish: right-click node menu (`node-menu.tsx` — change kind/colour
+via the existing `setNodeColor`/`setNodeKind`, delete), `ShareButton` (copies
+`location.href`). `apps/sync/src/env.ts` honours `$PORT` for Fly/Railway.
+`LICENSE` (MIT), `DEPLOY.md` (Neon → Upstash → Fly → Vercel), `apps/sync/fly.toml`.
+
+All six phases done + deployed-ready. Open item: `ANTHROPIC_API_KEY` in
+`apps/web/.env.local` for live generation + `npm run eval:ai`.
 
 ### Env / tooling notes
 - The Browser pane, when hidden, suspends `ResizeObserver` → React Flow can't
