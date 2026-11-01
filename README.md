@@ -2,7 +2,7 @@
 
 > **Two people, one board, live.** Open the same link in two browsers: you see each other's cursors, edit the same block without overwriting each other, and undo only your own changes. Ask the AI for a whole flowchart and it lands as a single undoable step.
 >
-> *Built as a reference implementation of real-time collaboration (CRDTs) with an AI layer that can't corrupt shared state. No sign-up needed to try it.*
+> *Built as a reference implementation of real-time collaboration (CRDTs) with an AI layer that can't corrupt shared state. No accounts anywhere: run it locally in two commands (see [Setup](#setup)); a hosted demo link will be added here.*
 
 A real-time collaborative canvas for logic and process flowcharts — several
 people build a graph together on an infinite pane, and an AI assistant can
