@@ -32,8 +32,6 @@ jobs:
       # Dummy values so `next build` can evaluate the env schema. No network calls
       # are made during the build.
       NEXT_PUBLIC_SYNC_URL: ws://localhost:1234
-      UPSTASH_REDIS_REST_URL: http://localhost:8079
-      UPSTASH_REDIS_REST_TOKEN: ci
 
     steps:
       - uses: actions/checkout@v4

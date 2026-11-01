@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { EMPTY_SNAPSHOT, canvasSnapshotSchema } from "@canvas/shared";
 import { pool } from "@/lib/db";
-import { aiGenerateLimit, clientIp } from "@/lib/ratelimit";
+import { aiDailyBudget, aiGenerateLimit, aiMonthlyBudget, clientIp, type Limiter } from "@/lib/ratelimit";
 import { generateGraph } from "@/lib/ai/generate";
 
 export const runtime = "nodejs";
@@ -44,15 +44,31 @@ export async function POST(request: Request) {
   const { boardId, prompt } = parsed.data;
 
   // Each call is a real, billed Anthropic request behind a public-ish endpoint.
-  const { success, reset } = await aiGenerateLimit.limit(clientIp(request));
-  if (!success) {
-    return NextResponse.json(
-      { error: "You've hit the generation limit. Try again later." },
-      {
-        status: 429,
-        headers: { "Retry-After": String(Math.max(1, Math.ceil((reset - Date.now()) / 1000))) },
-      },
-    );
+  // Three gates: per visitor, then the daily and 30-day budgets shared by all
+  // visitors (the ones that actually bound the bill). The limiter fails closed:
+  // if it can't be reached, no billed call is made.
+  const ip = clientIp(request);
+  const gates: [string, Limiter, string][] = [
+    ["visitor", aiGenerateLimit, "You've hit the generation limit. Try again later."],
+    ["daily", aiDailyBudget, "The AI assistant has reached its daily budget for this demo. Everything else still works — try again tomorrow."],
+    ["monthly", aiMonthlyBudget, "The AI assistant has reached its monthly budget for this demo. Everything else still works."],
+  ];
+  for (const [, limiter, message] of gates) {
+    let result;
+    try {
+      result = await limiter.limit(limiter === aiGenerateLimit ? ip : "all");
+    } catch {
+      return NextResponse.json({ error: "The AI assistant is temporarily unavailable." }, { status: 503 });
+    }
+    if (!result.success) {
+      return NextResponse.json(
+        { error: message },
+        {
+          status: 429,
+          headers: { "Retry-After": String(Math.max(1, Math.ceil((result.reset - Date.now()) / 1000))) },
+        },
+      );
+    }
   }
 
   const { rows } = await pool.query<{ snapshot: unknown }>(

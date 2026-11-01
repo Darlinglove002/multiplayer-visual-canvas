@@ -28,7 +28,7 @@ doc), honest documentation of gaps over half-built features.
   schema, returns an **add-only** patch (`aiPatchSchema` in `packages/shared`) —
   no ids, no coordinates. Client regenerates ids, elk lays out, dangling edges
   are pruned inside one transaction. LLM proposes, deterministic code disposes.
-- **Rate limiting**: `@upstash/ratelimit` in `apps/web` (board creation, AI
+- **Rate limiting**: Postgres-backed (`consume_rate_limit`) in `apps/web` (board creation, AI
   generation). In-memory limiter in `apps/sync` (correct there — single
   long-lived process).
 
@@ -73,7 +73,7 @@ doc), honest documentation of gaps over half-built features.
 Post-Phase-6 polish: right-click node menu (`node-menu.tsx` — change kind/colour
 via the existing `setNodeColor`/`setNodeKind`, delete), `ShareButton` (copies
 `location.href`). `apps/sync/src/env.ts` honours `$PORT` for Fly/Railway.
-`LICENSE` (MIT), `DEPLOY.md` (Neon → Upstash → Fly → Vercel), `apps/sync/fly.toml`.
+`LICENSE` (MIT), `DEPLOY.md` (Supabase → sync host → Vercel), `apps/sync/fly.toml`.
 
 All six phases done + deployed-ready. Open item: `ANTHROPIC_API_KEY` in
 `apps/web/.env.local` for live generation + `npm run eval:ai`.

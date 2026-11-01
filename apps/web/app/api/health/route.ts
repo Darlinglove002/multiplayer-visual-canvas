@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
-import { Redis } from "@upstash/redis";
 import { pool } from "@/lib/db";
-import { env } from "@/lib/env";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Phase 0 smoke check: are Postgres and the Redis/ratelimit backend reachable?
+// Smoke check: is Postgres reachable, and has the rate-limit migration run?
 export async function GET() {
   const checks: Record<string, "ok" | "error"> = {};
 
@@ -18,14 +16,10 @@ export async function GET() {
   }
 
   try {
-    const redis = new Redis({
-      url: env.UPSTASH_REDIS_REST_URL,
-      token: env.UPSTASH_REDIS_REST_TOKEN,
-    });
-    await redis.set("health:probe", String(Date.now()), { ex: 30 });
-    checks.redis = (await redis.get("health:probe")) ? "ok" : "error";
+    await pool.query("select 1 from rate_limits limit 1");
+    checks.rate_limits = "ok";
   } catch {
-    checks.redis = "error";
+    checks.rate_limits = "error";
   }
 
   const ok = Object.values(checks).every((v) => v === "ok");

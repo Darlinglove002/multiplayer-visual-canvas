@@ -1,36 +1,68 @@
-import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
-import { env } from "./env";
+import { createHash } from "node:crypto";
+import { pool } from "./db";
 
-// Sliding-window limits backed by Redis (Upstash in prod, the docker
-// serverless-redis-http shim in local dev). Real shared state — an in-memory
-// counter would not limit anything on Vercel, where every request can hit a
-// fresh function instance.
-const redis = new Redis({
-  url: env.UPSTASH_REDIS_REST_URL,
-  token: env.UPSTASH_REDIS_REST_TOKEN,
-});
+// Fixed-window limits backed by Postgres (migrations/0002_rate_limits.sql).
+// Real shared state — an in-memory counter would not limit anything on Vercel,
+// where every request can hit a fresh function instance.
+
+export interface Limiter {
+  limit(identifier: string): Promise<{ success: boolean; reset: number }>;
+}
+
+function intFromEnv(name: string, fallback: number): number {
+  const parsed = Number.parseInt(process.env[name] ?? "", 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+// Only a hash of the visitor id is stored, never the raw address.
+function hashed(identifier: string): string {
+  return createHash("sha256")
+    .update(`${process.env.RATE_LIMIT_SALT ?? ""}|${identifier}`)
+    .digest("hex")
+    .slice(0, 32);
+}
+
+/**
+ * `failOpen: true` lets the request through if the limiter itself errors —
+ * right for cheap writes. Anything that spends money leaves it false, so a
+ * limiter failure refuses the call instead of uncapping the bill.
+ */
+function makeLimit(name: string, max: number, windowSeconds: number, failOpen: boolean): Limiter {
+  return {
+    async limit(identifier: string) {
+      try {
+        const { rows } = await pool.query<{ out_allowed: boolean; out_retry_after: number }>(
+          "select * from consume_rate_limit($1, $2, $3)",
+          [`${name}:${hashed(identifier)}`, windowSeconds, max],
+        );
+        const row = rows[0];
+        if (!row) throw new Error("rate limit check returned no row");
+        return { success: row.out_allowed, reset: Date.now() + row.out_retry_after * 1000 };
+      } catch (err) {
+        console.error(`rate limiter "${name}" failed:`, err);
+        if (failOpen) return { success: true, reset: Date.now() };
+        throw err;
+      }
+    },
+  };
+}
+
+const MINUTE = 60;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
 
 /** Board creation: cheap to spam, writes two rows each time. */
-export const boardCreateLimit = new Ratelimit({
-  redis,
-  prefix: "rl:board-create",
-  limiter: Ratelimit.slidingWindow(5, "10 m"),
-});
+export const boardCreateLimit = makeLimit("board-create", 5, 10 * MINUTE, true);
 
 /** Board metadata writes (rename). Higher ceiling — it's a single-row update. */
-export const boardMutateLimit = new Ratelimit({
-  redis,
-  prefix: "rl:board-mutate",
-  limiter: Ratelimit.slidingWindow(30, "1 m"),
-});
+export const boardMutateLimit = makeLimit("board-mutate", 30, MINUTE, true);
 
-/** AI generation: each call costs a real, billed Anthropic request. Tighter. */
-export const aiGenerateLimit = new Ratelimit({
-  redis,
-  prefix: "rl:ai-generate",
-  limiter: Ratelimit.slidingWindow(10, "1 h"),
-});
+/** AI generation per visitor: each call is a real, billed Anthropic request. */
+export const aiGenerateLimit = makeLimit("ai-generate", intFromEnv("AI_PER_IP_PER_HOUR", 10), HOUR, false);
+
+/** AI generation across ALL visitors — the cap that actually bounds the bill. */
+export const aiDailyBudget = makeLimit("ai-budget-day", intFromEnv("DAILY_AI_CALL_CAP", 25), DAY, false);
+export const aiMonthlyBudget = makeLimit("ai-budget-30d", intFromEnv("MONTHLY_AI_CALL_CAP", 200), 30 * DAY, false);
 
 export function clientIp(request: Request): string {
   const xff = request.headers.get("x-forwarded-for");

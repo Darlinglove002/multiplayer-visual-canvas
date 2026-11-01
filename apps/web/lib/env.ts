@@ -11,9 +11,7 @@ const optional = z.preprocess(
 const schema = z.object({
   DATABASE_URL: z.string().min(1),
   NEXT_PUBLIC_SYNC_URL: z.string().min(1),
-  UPSTASH_REDIS_REST_URL: z.string().url(),
-  UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
-  // Only required once the AI layer lands (Phase 5).
+  // Without it the AI prompt bar answers "not set up" instead of failing.
   ANTHROPIC_API_KEY: optional,
 });
 

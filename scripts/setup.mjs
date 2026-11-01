@@ -1,5 +1,5 @@
 // One-command local bootstrap:
-//   1. bring up infra (Postgres + Redis + Upstash-compatible HTTP shim) via docker compose
+//   1. bring up Postgres via docker compose
 //   2. wait for Postgres, apply migrations
 //   3. write apps/web/.env.local and apps/sync/.env, preserving an existing ANTHROPIC_API_KEY
 //
@@ -13,12 +13,10 @@ import path from "node:path";
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const run = (cmd, env) => execSync(cmd, { cwd: root, stdio: "inherit", env: { ...process.env, ...env } });
 
-// Local dev values only. Production points at Neon + real Upstash + a deployed
-// sync server via each host's own env vars.
+// Local dev values only. Production points at a hosted Postgres (Supabase) and a
+// deployed sync server via each host's own env vars.
 const DATABASE_URL = "postgres://postgres:postgres@localhost:5433/canvas";
 const SYNC_PORT = "1234";
-const SRH_URL = "http://localhost:8079";
-const SRH_TOKEN = "local_dev_token";
 
 console.log("1/3  Starting infra  (docker compose up -d)");
 try {
@@ -53,8 +51,6 @@ writeFileSync(
     "# Written by scripts/setup.mjs — local dev. Re-run `npm run setup` to refresh.",
     `DATABASE_URL=${DATABASE_URL}`,
     `NEXT_PUBLIC_SYNC_URL=ws://localhost:${SYNC_PORT}`,
-    `UPSTASH_REDIS_REST_URL=${SRH_URL}`,
-    `UPSTASH_REDIS_REST_TOKEN=${SRH_TOKEN}`,
     "# Not automatable — get one from https://console.anthropic.com",
     `ANTHROPIC_API_KEY=${anthropicKey}`,
     "",

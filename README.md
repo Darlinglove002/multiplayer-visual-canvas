@@ -1,5 +1,9 @@
 # Multiplayer Visual Canvas
 
+> **Two people, one board, live.** Open the same link in two browsers: you see each other's cursors, edit the same block without overwriting each other, and undo only your own changes. Ask the AI for a whole flowchart and it lands as a single undoable step.
+>
+> *Built as a reference implementation of real-time collaboration (CRDTs) with an AI layer that can't corrupt shared state. No sign-up needed to try it.*
+
 A real-time collaborative canvas for logic and process flowcharts — several
 people build a graph together on an infinite pane, and an AI assistant can
 sketch one from a prompt. A focused, node-based slice of Miro/FigJam.
@@ -34,16 +38,14 @@ browser talks to two backends:
 flowchart LR
     B["Browser<br/>React Flow + Yjs + IndexedDB"]
     W["apps/web<br/>Next.js on Vercel"]
-    S["apps/sync<br/>Hocuspocus — stateful,<br/>on Railway / Fly"]
-    PG[("Postgres — Neon<br/>boards · board_documents<br/>(ydoc blob + JSON snapshot)")]
-    R[("Redis — Upstash<br/>rate limits")]
+    S["apps/sync<br/>Hocuspocus — stateful,<br/>on any Docker host"]
+    PG[("Postgres — Supabase<br/>boards · board_documents<br/>(ydoc blob + JSON snapshot)")]
     AI["Anthropic API"]
 
     B -- "wss:// — CRDT sync + presence" --> S
     B -- "https:// — dashboard, rename, generate" --> W
     S --> PG
     W --> PG
-    W --> R
     W -- "server-side only" --> AI
 ```
 
@@ -103,8 +105,8 @@ Needs Docker Desktop running. No cloud accounts required for local dev.
 
 ```bash
 npm install
-npm run setup   # docker compose up (Postgres + Redis + an Upstash-compatible
-                # HTTP shim), run migrations, write the two .env files
+npm run setup   # docker compose up (Postgres), run migrations,
+                # write the two .env files
 npm run dev     # web → http://localhost:3000   sync → ws://localhost:1234
 ```
 
@@ -112,8 +114,8 @@ The AI assistant needs an Anthropic key — add `ANTHROPIC_API_KEY` to
 `apps/web/.env.local` (`npm run setup` keeps an existing one). Without it,
 `/api/generate` returns a clear `503` and everything else works.
 
-Local Postgres is on host port **5433** and Redis on **6380**, shifted off the
-defaults so the stack coexists with anything else on the machine. Reset the
+Local Postgres is on host port **5433**, shifted off the default so the stack
+coexists with anything else on the machine. Reset the
 local database with `npm run db:reset`.
 
 ### Using a board
@@ -125,13 +127,16 @@ kind or colour, or delete it · **Share** copies the board link · `Ctrl+Z` /
 
 ## Deploying
 
-Neon + Upstash + Fly + Vercel, all with a free tier — see **[DEPLOY.md](DEPLOY.md)**.
+Supabase (Postgres) + Vercel (web) + any host that can run a Docker container
+(the sync server) — see **[DEPLOY.md](DEPLOY.md)**. The AI assistant is capped per
+visitor and by a daily and monthly budget shared across all visitors, so a public
+demo can't run up a bill.
 
 ### Verifying
 
 | Command | Checks |
 | --- | --- |
-| `curl localhost:3000/api/health` | Postgres + Redis reachable |
+| `curl localhost:3000/api/health` | Postgres reachable and migrations applied |
 | `npm test` | 45 unit tests over the Y.Doc primitives, undo scoping, snapshot codec, and `resolveAiGraph` |
 | `npm run smoke` | sync server syncs a valid board id, rejects an unknown one (`onAuthenticate` room gate) |
 | `npm run smoke:mp` | two clients on one board — CRDT sync, concurrent create/text merges, awareness, and undo that reverts only its own work |
@@ -145,7 +150,7 @@ Postgres on every push.
 
 Next.js 16 (App Router) · React Flow · Yjs · Hocuspocus · CodeMirror 6 ·
 `y-codemirror.next` · elkjs · `@anthropic-ai/sdk` (`claude-sonnet-5`) ·
-`@upstash/ratelimit` · Postgres · Tailwind v4 · TypeScript · Vitest.
+Postgres (rate limits included) · Tailwind v4 · TypeScript · Vitest.
 
 ## Known limitations (deliberate, documented)
 
@@ -155,7 +160,7 @@ Next.js 16 (App Router) · React Flow · Yjs · Hocuspocus · CodeMirror 6 ·
   and keeping the transport a bare `room_id` is the design decision. Production
   would add sessions + per-board roles in Postgres RLS.
 - **Single sync instance.** Scaling `apps/sync` past one process needs the
-  Hocuspocus Redis extension for cross-instance pub/sub.
+  Hocuspocus Redis extension for cross-instance pub/sub (and a Redis to run it on).
 - **No board TTL job.** `boards.last_activity_at` is maintained for exactly this;
   the cleanup cron isn't written.
 - **No server-side refusal fallback on the AI call.** A refused "diagram this"
